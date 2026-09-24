@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50 antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fleet Management System | Jakarta EE Core</title>
+    <meta name="description" content="Clean, structured frontend for Jakarta EE Fleet Management with Google Sign-In, real-time Google Maps fleet tracking overlay at 5s intervals, telemetry tables, and vehicle-driver assignments." />
+    <meta property="og:title" content="Fleet Management System | Jakarta EE Core" />
+    <meta property="og:description" content="Clean, structured frontend for Jakarta EE Fleet Management with Google Sign-In, real-time Google Maps fleet tracking overlay at 5s intervals, telemetry tables, and vehicle-driver assignments." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Identity Services (GIS) Client Library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Clean up invalid keys & early Google Maps auth failure handler -->
+    <script>
+      try {
+        if (localStorage.getItem('fleetcore_gmaps_key') === 'AIzaSyAq7msUY19gHJw2WURKeThNDyttS19HPl8') {
+          localStorage.removeItem('fleetcore_gmaps_key');
+        }
+      } catch (e) {}
+
+      window.gm_authFailure = function() {
+        if (typeof window.handleGoogleMapsAuthFailure === 'function') {
+          window.handleGoogleMapsAuthFailure('ApiNotActivatedMapError');
+        }
+      };
+    </script>
+
+    <!-- Leaflet CSS & JS for immediate live preview map fallback -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#eff6ff',
+                100: '#dbeafe',
+                500: '#3b82f6',
+                600: '#2563eb',
+                700: '#1d4ed8',
+                800: '#1e40af',
+                900: '#1e3a8a',
+                950: '#172554',
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- External Custom Stylesheet -->
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="h-full flex flex-col text-slate-900 bg-slate-50 font-sans">
+    
+    <!-- Top Global Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 gap-4">
+          
+          <!-- Brand Identity -->
+          <div class="flex items-center gap-3 shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center text-white shadow-sm ring-1 ring-blue-600/30">
+              <!-- Fleet / Truck SVG Icon -->
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 tracking-tight text-base sm:text-lg">FleetCore</span>
+                <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Jakarta EE</span>
+              </div>
+              <p class="text-xs text-slate-500 hidden sm:block">Fleet Logistics & Telematics Management</p>
+            </div>
+          </div>
+
+          <!-- Center Status & Data Source Controls -->
+          <div class="hidden md:flex items-center gap-2.5 text-xs">
+            <!-- Data Source Mode Toggle -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+              <button id="btn-mode-auto" class="px-2.5 py-1 rounded-md font-semibold text-slate-700 transition-colors" title="Automatic fallback if backend is offline">Auto</button>
+              <button id="btn-mode-live" class="px-2.5 py-1 rounded-md font-semibold text-slate-700 transition-colors" title="Force connect to local Jakarta EE backend">Live Backend</button>
+              <button id="btn-mode-mock" class="px-2.5 py-1 rounded-md font-semibold text-slate-700 transition-colors" title="Use built-in mock fleet dataset">Mock Data</button>
+            </div>
+
+            <!-- Status Indicator -->
+            <span id="backend-status-indicator" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-sky-100 text-sky-800 border border-sky-200" title="Target: http://localhost:8080/fleetcore-1.0.0-SNAPSHOT/api">
+              <span class="w-2 h-2 rounded-full bg-sky-500"></span> Target: localhost:8080
+            </span>
+            <span id="token-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 border border-amber-200 cursor-pointer" title="Click to view or edit JWT token">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span> Unauthenticated
+            </span>
+          </div>
+
+          <!-- Right Action & Auth Controls -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            
+            <!-- JWT Inspector Button -->
+            <button id="btn-inspect-token" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg border border-slate-200 shadow-2xs transition-colors" title="Inspect Google ID Token & Bearer claims">
+              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              <span class="hidden lg:inline">Inspect JWT</span>
+            </button>
+
+            <!-- Settings / Backend URL Config Button -->
+            <button id="btn-open-settings" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 shadow-2xs" title="Configure Backend URL & OAuth">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+
+            <!-- Unauthenticated State: GIS Button & Dev Token -->
+            <div id="auth-unauthenticated" class="flex items-center gap-2">
+              <!-- GIS Sign-In Button Container rendered by google.accounts.id.renderButton -->
+              <div id="google-btn-container" class="min-h-[40px] flex items-center"></div>
+              
+              <!-- Quick Developer Token Button (Allows testing Authorization: Bearer header immediately without GCP OAuth setup) -->
+              <button id="btn-dev-token" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs" title="Generates and stores a test Google JWT in sessionStorage">
+                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                <span>Use Dev JWT</span>
+              </button>
+            </div>
+
+            <!-- Authenticated State: User Profile & Sign Out -->
+            <div id="auth-authenticated" class="hidden flex items-center gap-3">
+              <div class="flex items-center gap-2.5">
+                <img id="auth-user-avatar" class="w-8 h-8 rounded-full border border-slate-300 object-cover shadow-xs" alt="User avatar" src="" />
+                <div class="hidden lg:block text-left">
+                  <div id="auth-user-name" class="text-xs font-bold text-slate-800 leading-tight">Fleet Admin</div>
+                  <div id="auth-user-email" class="text-[11px] text-slate-500 leading-tight">user@example.com</div>
+                </div>
+              </div>
+              <button id="btn-sign-out" class="px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors">
+                Sign Out
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Bar -->
+      <div class="bg-slate-50 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between">
+          <nav class="flex space-x-8" aria-label="Tabs">
+            <!-- Tab 1: Live Tracking -->
+            <button id="tab-btn-tracking" class="tab-btn active py-3 px-1 text-sm font-semibold flex items-center gap-2">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Live Fleet Tracking</span>
+              <span class="text-[10px] font-mono bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">GET /api/tracking</span>
+            </button>
+
+            <!-- Tab 2: Vehicle & Driver Assignments -->
+            <button id="tab-btn-assignments" class="tab-btn py-3 px-1 text-sm font-semibold flex items-center gap-2">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              <span>Vehicle & Driver Assignments</span>
+              <span class="text-[10px] font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">POST &amp; GET /api/assignments</span>
+            </button>
+          </nav>
+
+          <!-- Mobile Data Source Mode Switcher -->
+          <div class="flex md:hidden items-center gap-1.5 py-2 border-t border-slate-200 text-xs">
+            <span class="text-slate-500 font-medium">Source:</span>
+            <div class="flex items-center bg-slate-200 p-0.5 rounded-md">
+              <button onclick="document.getElementById('btn-mode-auto').click()" class="px-2 py-0.5 rounded text-[11px] font-medium">Auto</button>
+              <button onclick="document.getElementById('btn-mode-live').click()" class="px-2 py-0.5 rounded text-[11px] font-medium">Live</button>
+              <button onclick="document.getElementById('btn-mode-mock').click()" class="px-2 py-0.5 rounded text-[11px] font-medium">Mock</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Source Status Banner -->
+      <div id="data-source-banner" class="p-3 bg-amber-50 border-b border-amber-200 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all">
+        <div id="data-source-banner-text" class="flex items-center gap-2">
+          <span>Loading data origin status...</span>
+        </div>
+        <div id="data-source-banner-action"></div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: FLEET TRACKING                     -->
+      <!-- ========================================== -->
+      <section id="view-tracking" class="space-y-6">
+        
+        <!-- Metrics Row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tracked</div>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="metric-total-vehicles" class="text-2xl font-bold text-slate-900 font-mono">0</span>
+              <span class="text-xs font-medium text-slate-500">Fleet Units</span>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Active Units</div>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="metric-active-vehicles" class="text-2xl font-bold text-emerald-600 font-mono">0</span>
+              <span class="text-xs font-medium text-emerald-700">Online</span>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">In Transit</div>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="metric-in-transit" class="text-2xl font-bold text-blue-600 font-mono">0</span>
+              <span class="text-xs font-medium text-blue-700">Cruising</span>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+            <div class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Idle / Depot</div>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="metric-idle" class="text-2xl font-bold text-amber-600 font-mono">0</span>
+              <span class="text-xs font-medium text-amber-700">Stationary</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Fleet Map Card -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+          <!-- Map Toolbar -->
+          <div class="p-3 sm:p-4 border-b border-slate-200 bg-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-base font-bold text-slate-900">Live Fleet Map Tracking</h2>
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                    Mbombela
+                  </span>
+                  <span id="map-engine-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    Live GPS Stream
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500">Real-time GPS vehicle positions in and around Mbombela (Nelspruit) &bull; updated every 5s</p>
+              </div>
+            </div>
+
+            <!-- Map Controls & Status -->
+            <div class="flex items-center flex-wrap gap-2 text-xs">
+              <!-- Realtime 5s interval indicator -->
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>5s Real-Time Sync</span>
+              </div>
+              <span id="map-countdown-badge" class="font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                Sync in: 5s
+              </span>
+
+              <!-- Vehicle Focus Dropdown -->
+              <select id="map-vehicle-focus" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-blue-500">
+                <option value="">Center Vehicle...</option>
+              </select>
+
+              <!-- Fit All Markers -->
+              <button id="btn-map-fit-all" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors" title="Fit all vehicles in map bounds">
+                Fit All
+              </button>
+
+              <!-- Google Maps Key Guide Button -->
+              <button id="btn-open-gmaps-guide" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors flex items-center gap-1.5" title="Step-by-step guide to create a Google Maps API Key">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                <span>Maps Key Guide</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Map View Area -->
+          <div class="relative w-full h-[450px] bg-slate-100">
+            <!-- Map Container Element -->
+            <div id="fleet-map-canvas" class="w-full h-full z-0"></div>
+
+            <!-- Top Overlay: Quick Google Maps API Key Activation Banner (if key not provided) -->
+            <div id="gmaps-key-banner" class="absolute top-3 left-3 right-3 z-10 p-3 bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="font-bold text-slate-800">Google Maps API Overlay:</span>
+                  <span class="text-slate-500 block sm:inline sm:ml-1">Paste your Google Maps API Key to switch to Google Maps Satellite &amp; Traffic.</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <input 
+                  type="password" 
+                  id="input-quick-gmaps-key" 
+                  placeholder="Paste AIzaSy... key" 
+                  class="px-2.5 py-1 text-xs bg-slate-50 border border-slate-300 rounded-lg w-44 font-mono focus:ring-2 focus:ring-blue-500"
+                />
+                <button id="btn-activate-gmaps-key" class="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors whitespace-nowrap">
+                  Activate
+                </button>
+                <button id="btn-dismiss-gmaps-banner" class="text-slate-400 hover:text-slate-600 p-1" title="Dismiss banner">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Top Overlay: ApiNotActivatedMapError / API Key Activation Notice -->
+            <div id="gmaps-error-banner" class="hidden absolute top-3 left-3 right-3 z-20 p-3.5 bg-amber-50/95 backdrop-blur-md rounded-xl border border-amber-300 shadow-md text-xs">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="flex items-start gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 mt-0.5">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-amber-950 text-sm">Action Needed: Enable Maps JavaScript API</span>
+                      <span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-mono text-[10px] font-bold">ApiNotActivatedMapError</span>
+                    </div>
+                    <p class="text-amber-900 mt-1">
+                      Your API key was received, but <strong>"Maps JavaScript API"</strong> is not enabled yet in your Google Cloud Project. 
+                      Meanwhile, <strong>Live Preview Map</strong> is active so your fleet tracking in Mbombela works seamlessly.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
+                  <a href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    <span>Enable in Cloud Console</span>
+                  </a>
+                  <button id="btn-dismiss-gmaps-error" class="px-2.5 py-1.5 bg-white hover:bg-amber-100 text-amber-900 font-medium rounded-lg border border-amber-300 transition-colors">
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Floating HUD: Fleet Stats -->
+            <div class="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-xs border border-slate-200 rounded-lg px-3 py-2 shadow-xs text-xs flex items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                <span class="text-slate-600 font-medium">Active Fleet:</span>
+                <strong id="hud-active-vehicles" class="font-mono text-slate-900">0</strong>
+              </div>
+              <div class="h-3 w-px bg-slate-200"></div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-600 font-medium">Avg Speed:</span>
+                <strong id="hud-avg-speed" class="font-mono text-slate-900">0 km/h</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+          
+          <!-- Table Toolbar -->
+          <div class="p-4 border-b border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Real-Time Vehicle Telematics</h2>
+              <p class="text-xs text-slate-500">Live GPS tracking and telemetry stream from Jakarta EE backend</p>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-2.5">
+              <!-- Search Input -->
+              <div class="relative min-w-[200px]">
+                <input 
+                  id="tracking-search-input" 
+                  type="text" 
+                  placeholder="Filter by ID, plate, or driver..." 
+                  class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              <!-- Status Filter Select -->
+              <select id="tracking-status-filter" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+                <option value="ALL">All Statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="IN_TRANSIT">In Transit</option>
+                <option value="IDLE">Idle</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+
+              <!-- Auto-Refresh Toggle -->
+              <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-[11px] font-medium text-slate-600">Auto:</span>
+                <select id="select-auto-refresh" class="text-xs bg-transparent border-0 text-slate-800 font-semibold focus:ring-0 p-0 cursor-pointer">
+                  <option value="0">Off</option>
+                  <option value="5">5s</option>
+                  <option value="15">15s</option>
+                  <option value="30">30s</option>
+                </select>
+                <span id="auto-refresh-indicator" class="hidden text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">LIVE</span>
+              </div>
+
+              <!-- Refresh Button -->
+              <button id="btn-refresh-tracking" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Error Alert (Hidden by default) -->
+          <div id="tracking-error" class="hidden p-4 bg-rose-50 border-b border-rose-200 flex items-start justify-between gap-3 text-sm text-rose-900">
+            <div class="flex items-start gap-2.5">
+              <svg class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <div class="font-bold">Backend Communication Warning</div>
+                <div id="tracking-error-message" class="text-xs text-rose-700 mt-0.5"></div>
+              </div>
+            </div>
+            <button id="btn-retry-tracking" class="px-2.5 py-1 text-xs font-semibold bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors">
+              Retry Connection
+            </button>
+          </div>
+
+          <!-- Table Container -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                  <th class="py-3 px-4">Vehicle ID</th>
+                  <th class="py-3 px-4">Plate / Model</th>
+                  <th class="py-3 px-4">Assigned Driver</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Current Speed</th>
+                  <th class="py-3 px-4">Location &amp; Street Address</th>
+                  <th class="py-3 px-4">Fuel / Energy</th>
+                  <th class="py-3 px-4">Last Ping</th>
+                </tr>
+              </thead>
+              <tbody id="tracking-table-body" class="divide-y divide-slate-100 text-sm">
+                <!-- Dynamically populated by app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div id="tracking-loading" class="hidden p-8 text-center bg-white">
+            <div class="inline-flex items-center gap-2 text-sm text-slate-500 font-medium">
+              <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Querying GET /api/tracking with Bearer token...</span>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div id="tracking-empty" class="hidden p-12 text-center bg-white">
+            <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <h3 class="text-sm font-semibold text-slate-800">No Tracking Records Found</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">No telemetry data matches your current search criteria or the backend returned an empty dataset.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: VEHICLE & DRIVER ASSIGNMENTS       -->
+      <!-- ========================================== -->
+      <section id="view-assignments" class="hidden space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- LEFT COLUMN: Assignment Form (4 cols) -->
+          <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-200 bg-slate-50/50">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-blue-100 text-blue-800 font-mono">POST</span>
+                <span class="font-mono text-xs text-slate-600">/api/assignments</span>
+              </div>
+              <h2 class="text-base font-bold text-slate-900 mt-1">Assign Vehicle to Driver</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Submit dispatch pairing to the Jakarta EE FleetCore backend.</p>
+            </div>
+
+            <form id="assignment-form" class="p-5 space-y-4">
+              
+              <!-- Vehicle ID Input -->
+              <div>
+                <label for="input-vehicle-id" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Vehicle ID <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    id="input-vehicle-id" 
+                    name="vehicleId" 
+                    min="1" 
+                    placeholder="e.g. 1" 
+                    required 
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                  />
+                  <div class="absolute right-3 top-2.5 text-xs text-slate-400 font-mono">{"vehicle":{"vehicleId": X}}</div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Unique primary key integer identifying the fleet asset.</p>
+              </div>
+
+              <!-- Driver ID Input -->
+              <div>
+                <label for="input-driver-id" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Driver ID <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    id="input-driver-id" 
+                    name="driverId" 
+                    min="1" 
+                    placeholder="e.g. 12" 
+                    required 
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                  />
+                  <div class="absolute right-3 top-2.5 text-xs text-slate-400 font-mono">{"driver":{"driverId": Y}}</div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Unique primary key integer identifying the licensed driver.</p>
+              </div>
+
+              <!-- JSON Payload Contract Preview -->
+              <div class="p-3 bg-slate-900 text-slate-300 rounded-lg text-xs font-mono">
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Target JSON Payload</span>
+                  <span class="text-emerald-400">application/json</span>
+                </div>
+                <div class="text-blue-300">{</div>
+                <div class="pl-4 text-emerald-300">"vehicle": <span class="text-amber-200">{"vehicleId": <span id="preview-vehicle-id">...</span>}</span>,</div>
+                <div class="pl-4 text-emerald-300">"driver": <span class="text-amber-200">{"driverId": <span id="preview-driver-id">...</span>}</span></div>
+                <div class="text-blue-300">}</div>
+              </div>
+
+              <!-- Submit Button -->
+              <button 
+                type="submit" 
+                id="btn-submit-assignment" 
+                class="w-full py-2.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Assign Vehicle to Driver</span>
+              </button>
+
+              <div id="assignment-form-feedback" class="text-xs text-center"></div>
+            </form>
+          </div>
+
+          <!-- RIGHT COLUMN: Assignments List (7 cols) -->
+          <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-200 bg-white flex items-center justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-slate-100 text-slate-800 font-mono">GET</span>
+                  <span class="font-mono text-xs text-slate-600">/api/assignments</span>
+                </div>
+                <h2 class="text-base font-bold text-slate-900 mt-1">Existing Fleet Assignments</h2>
+              </div>
+
+              <button id="btn-refresh-assignments" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="assignments-error" class="hidden p-4 bg-rose-50 border-b border-rose-200 flex items-start justify-between gap-3 text-sm text-rose-900">
+              <div>
+                <div class="font-bold">Failed to load assignments</div>
+                <div id="assignments-error-message" class="text-xs text-rose-700 mt-0.5"></div>
+              </div>
+              <button id="btn-retry-assignments" class="px-2.5 py-1 text-xs font-semibold bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors">
+                Retry
+              </button>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="assignments-loading" class="hidden p-8 text-center bg-white">
+              <div class="inline-flex items-center gap-2 text-sm text-slate-500 font-medium">
+                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Fetching existing assignments from /api/assignments...</span>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="assignments-empty" class="hidden p-12 text-center bg-white">
+              <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <h3 class="text-sm font-semibold text-slate-800">No Assignments Yet</h3>
+              <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Use the form on the left to assign your first vehicle to a registered driver.</p>
+            </div>
+
+            <!-- Assignments List Container -->
+            <div id="assignments-list" class="p-4 space-y-3">
+              <!-- Dynamically populated by app.js -->
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Footer with Environment Details -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-4 text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span>Target API:</span>
+          <code id="current-api-url-label" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono">http://localhost:8080/fleetcore-1.0.0-SNAPSHOT/api</code>
+        </div>
+        <div>
+          <span>Authorization: </span>
+          <span class="font-mono text-slate-700 font-semibold">Bearer &lt;Google ID Token JWT&gt;</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Settings / Config Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-base font-bold text-slate-900">Frontend Configuration</h3>
+          <button id="btn-close-settings" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="space-y-4 text-sm">
+          <div>
+            <label for="settings-api-url" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Backend API Base URL</label>
+            <input 
+              type="text" 
+              id="settings-api-url" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+              placeholder="http://localhost:8080/fleetcore-1.0.0-SNAPSHOT/api"
+            />
+            <p class="text-[11px] text-slate-500 mt-1">Defaults to your local Jakarta EE application deployment context.</p>
+          </div>
+
+          <div>
+            <label for="settings-client-id" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Google OAuth Client ID</label>
+            <input 
+              type="text" 
+              id="settings-client-id" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+              placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com"
+            />
+            <p class="text-[11px] text-slate-500 mt-1">Obtained from Google Cloud Console &gt; APIs &amp; Services &gt; Credentials.</p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="settings-gmaps-key" class="block text-xs font-semibold text-slate-700 uppercase">Google Maps API Key</label>
+              <button type="button" id="btn-modal-open-gmaps-guide" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 underline">
+                How to create this key?
+              </button>
+            </div>
+            <input 
+              type="password" 
+              id="settings-gmaps-key" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+              placeholder="AIzaSy..."
+            />
+            <p class="text-[11px] text-slate-500 mt-1">Enables official Google Maps JavaScript API with satellite imagery, terrain, and traffic layers.</p>
+          </div>
+
+          <div class="p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-900 space-y-1">
+            <div class="font-bold">Jakarta EE CORS Reminder:</div>
+            <div>Make sure your Jakarta EE REST application includes CORS headers:</div>
+            <code class="block font-mono bg-white p-2 rounded text-[11px] text-slate-800 mt-1">
+              Access-Control-Allow-Origin: *<br>
+              Access-Control-Allow-Headers: Authorization, Content-Type<br>
+              Access-Control-Allow-Methods: GET, POST, OPTIONS
+            </code>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button id="btn-save-settings" class="px-4 py-2 text-xs font-semibold bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors">
+            Save &amp; Apply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JWT Token Inspector Modal -->
+    <div id="token-inspector-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Google JWT Bearer Token Inspector</h3>
+              <p class="text-xs text-slate-500">Examine or replace the active Authorization token</p>
+            </div>
+          </div>
+          <button id="btn-close-token-inspector" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div id="token-status-summary"></div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Raw JWT Token (Stored in sessionStorage)</label>
+          <textarea 
+            id="token-raw-content" 
+            rows="3" 
+            class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+            placeholder="Paste your raw JWT token string here..."
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Decoded Payload Claims</label>
+          <pre id="token-claims-content" class="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs font-mono max-h-48 overflow-y-auto">// No claims</pre>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <button id="btn-clear-token" class="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors">
+            Clear Token (Sign Out)
+          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-save-custom-token" class="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+              Save Custom Token
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Maps API Key Setup Guide Modal -->
+    <div id="gmaps-guide-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">How to Create a Google Maps API Key</h3>
+              <p class="text-xs text-slate-500">Fast 4-step setup in Google Cloud Console</p>
+            </div>
+          </div>
+          <button id="btn-close-gmaps-guide" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Step-by-Step Instructions -->
+        <div class="space-y-3.5 text-xs text-slate-700">
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</div>
+            <div>
+              <div class="font-bold text-slate-900">Go to Google Cloud Console</div>
+              <p class="text-slate-600 mt-0.5">Visit <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-blue-600 underline font-medium">console.cloud.google.com</a> and sign in with your Google Account. If needed, create or select a project (e.g. <em>"Fleet Management"</em>).</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</div>
+            <div>
+              <div class="font-bold text-slate-900">Enable "Maps JavaScript API"</div>
+              <p class="text-slate-600 mt-0.5">In the search bar at top or via <strong>APIs &amp; Services &gt; Library</strong>, search for <code>Maps JavaScript API</code> and click <strong>Enable</strong>.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</div>
+            <div>
+              <div class="font-bold text-slate-900">Create an API Key</div>
+              <p class="text-slate-600 mt-0.5">Navigate to <strong>APIs &amp; Services &gt; Credentials</strong> &rarr; Click <strong>+ CREATE CREDENTIALS</strong> &rarr; Select <strong>API key</strong>. Your key (starting with <code>AIzaSy...</code>) will be generated instantly.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">4</div>
+            <div>
+              <div class="font-bold text-slate-900">(Recommended) Restrict the Key</div>
+              <p class="text-slate-600 mt-0.5">Under "API restrictions", select <strong>Restrict key</strong> and check only <strong>Maps JavaScript API</strong>. Google provides $200 free credit monthly (approx 28,500 free map loads every month).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Key Input Form -->
+        <div class="pt-2 border-t border-slate-100">
+          <label for="guide-input-gmaps-key" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Enter your API Key to activate Google Maps now:</label>
+          <div class="flex items-center gap-2">
+            <input 
+              type="password" 
+              id="guide-input-gmaps-key" 
+              placeholder="AIzaSy..." 
+              class="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+            <button id="btn-guide-save-key" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap">
+              Save &amp; Activate
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Interactive Live Payload Preview Sync Script -->
+    <script>
+      const vInput = document.getElementById('input-vehicle-id');
+      const dInput = document.getElementById('input-driver-id');
+      const vPreview = document.getElementById('preview-vehicle-id');
+      const dPreview = document.getElementById('preview-driver-id');
+      if (vInput && vPreview) {
+        vInput.addEventListener('input', (e) => {
+          vPreview.textContent = e.target.value || '...';
+        });
+      }
+      if (dInput && dPreview) {
+        dInput.addEventListener('input', (e) => {
+          dPreview.textContent = e.target.value || '...';
+        });
+      }
+    </script>
+
+    <!-- Main Modular Application Script -->
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
+
+

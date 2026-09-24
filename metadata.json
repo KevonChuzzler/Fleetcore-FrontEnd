@@ -1,0 +1,6 @@
+{
+  "name": "Fleet Management System",
+  "description": "Clean, structured frontend for Jakarta EE Fleet Management with Google Sign-In, real-time Google Maps fleet tracking overlay at 5s intervals, telemetry tables, and vehicle-driver assignments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

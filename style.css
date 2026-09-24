@@ -1,0 +1,181 @@
+/* style.css - Custom styling tweaks and layout extensions built on top of Tailwind */
+
+:root {
+  --primary: #1e3a8a;
+  --primary-hover: #172554;
+  --accent: #0284c7;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #e2e8f0;
+}
+
+/* Custom Scrollbar for tables and code blocks */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Live Status Indicator Pulse */
+.status-pulse {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-pulse::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: translateY(-50%) scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: translateY(-50%) scale(1.6);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: translateY(-50%) scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Tab Active Transitions */
+.tab-btn {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-btn.active {
+  color: #1e3a8a;
+  font-weight: 600;
+  border-bottom: 2px solid #1e3a8a;
+}
+
+.tab-btn:not(.active) {
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:not(.active):hover {
+  color: #1e293b;
+  border-bottom-color: #cbd5e1;
+}
+
+/* Toast Notification Animation */
+.toast-enter {
+  animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-exit {
+  animation: toast-slide-out 0.25s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+}
+
+/* Monospace font utility for coordinates and IDs */
+.font-mono-tabular {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Table Row Highlights */
+.fleet-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.fleet-table-row:hover {
+  background-color: #f8fafc;
+}
+
+/* Google GIS Button container alignment */
+#google-signin-wrapper {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+/* Map marker animations & custom overlays */
+.vehicle-marker-icon {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+}
+.vehicle-marker-icon:hover {
+  transform: scale(1.18);
+  z-index: 1000;
+}
+
+.marker-beacon {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: beacon-pulse 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
+}
+
+@keyframes beacon-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* Leaflet container fixes */
+.leaflet-container {
+  font-family: inherit;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  overflow: hidden;
+}
+.leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+}
+
