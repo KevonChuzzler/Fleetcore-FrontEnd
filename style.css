@@ -1,28 +1,52 @@
 /* style.css - Custom styling tweaks and layout extensions built on top of Tailwind */
 
 :root {
-  --primary: #1e3a8a;
-  --primary-hover: #172554;
-  --accent: #0284c7;
+  --primary: #dc2626;
+  --primary-hover: #b91c1c;
+  --accent: #ef4444;
   --surface: #ffffff;
   --surface-muted: #f8fafc;
   --border: #e2e8f0;
 }
 
-/* Custom Scrollbar for tables and code blocks */
+/* Custom Scrollbars - wide, permanently visible and easy to grab with a trackpad or mouse */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
 }
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
+  background: #94a3b8;
+  border-radius: 8px;
+  border: 2px solid #f1f5f9;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #475569;
+}
+
+/* Dedicated trackpad-friendly scroll containers */
+.scrollable-touch-body {
+  scrollbar-width: auto;
+  scrollbar-color: #64748b #e2e8f0;
+}
+.scrollable-touch-body::-webkit-scrollbar {
+  width: 14px;
+}
+.scrollable-touch-body::-webkit-scrollbar-thumb {
+  background-color: #64748b;
+  border-radius: 8px;
+  border: 3px solid #e2e8f0;
+}
+.scrollable-touch-body::-webkit-scrollbar-thumb:hover {
+  background-color: #1e293b;
 }
 
 /* Live Status Indicator Pulse */
@@ -66,9 +90,9 @@
 }
 
 .tab-btn.active {
-  color: #1e3a8a;
+  color: #dc2626;
   font-weight: 600;
-  border-bottom: 2px solid #1e3a8a;
+  border-bottom: 2px solid #dc2626;
 }
 
 .tab-btn:not(.active) {
@@ -77,8 +101,8 @@
 }
 
 .tab-btn:not(.active):hover {
-  color: #1e293b;
-  border-bottom-color: #cbd5e1;
+  color: #0f172a;
+  border-bottom-color: #fca5a5;
 }
 
 /* Toast Notification Animation */

@@ -9,6 +9,7 @@
     <meta property="og:description" content="Clean, structured frontend for Jakarta EE Fleet Management with Google Sign-In, real-time Google Maps fleet tracking overlay at 5s intervals, telemetry tables, and vehicle-driver assignments." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="./fleet-icon.svg" />
 
     <!-- Google Identity Services (GIS) Client Library -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -40,14 +41,22 @@
           extend: {
             colors: {
               brand: {
-                50: '#eff6ff',
-                100: '#dbeafe',
-                500: '#3b82f6',
-                600: '#2563eb',
-                700: '#1d4ed8',
-                800: '#1e40af',
-                900: '#1e3a8a',
-                950: '#172554',
+                50: '#fef2f2',
+                100: '#fee2e2',
+                200: '#fecaca',
+                300: '#fca5a5',
+                400: '#f87171',
+                500: '#ef4444',
+                600: '#dc2626',
+                700: '#b91c1c',
+                800: '#991b1b',
+                900: '#7f1d1d',
+                950: '#450a0a',
+              },
+              dark: {
+                800: '#1f242d',
+                900: '#11151c',
+                950: '#090b0e',
               }
             }
           }
@@ -65,22 +74,13 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 gap-4">
           
-          <!-- Brand Identity -->
+          <!-- Brand Identity with Uploaded Logo -->
           <div class="flex items-center gap-3 shrink-0">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center text-white shadow-sm ring-1 ring-blue-600/30">
-              <!-- Fleet / Truck SVG Icon -->
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-              </svg>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-900 tracking-tight text-base sm:text-lg">FleetCore</span>
-                <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Jakarta EE</span>
+            <a href="#" class="flex items-center gap-3 group transition-transform hover:scale-[1.01]">
+              <div class="h-11 px-2.5 py-1 rounded-xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-center ring-1 ring-slate-900/5 group-hover:border-red-300 transition-colors">
+                <img src="./fleet-logo.svg" alt="FleetCore Logo" class="h-8 w-auto object-contain max-w-[160px] sm:max-w-[200px]" />
               </div>
-              <p class="text-xs text-slate-500 hidden sm:block">Fleet Logistics & Telematics Management</p>
-            </div>
+            </a>
           </div>
 
           <!-- Center Status & Data Source Controls -->
@@ -106,7 +106,7 @@
             
             <!-- JWT Inspector Button -->
             <button id="btn-inspect-token" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg border border-slate-200 shadow-2xs transition-colors" title="Inspect Google ID Token & Bearer claims">
-              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
               <span class="hidden lg:inline">Inspect JWT</span>
@@ -126,8 +126,8 @@
               <div id="google-btn-container" class="min-h-[40px] flex items-center"></div>
               
               <!-- Quick Developer Token Button (Allows testing Authorization: Bearer header immediately without GCP OAuth setup) -->
-              <button id="btn-dev-token" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs" title="Generates and stores a test Google JWT in sessionStorage">
-                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button id="btn-dev-token" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors shadow-xs" title="Generates and stores a test Google JWT in sessionStorage">
+                <svg class="w-3.5 h-3.5 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
                 <span>Use Dev JWT</span>
@@ -159,12 +159,12 @@
           <nav class="flex space-x-8" aria-label="Tabs">
             <!-- Tab 1: Live Tracking -->
             <button id="tab-btn-tracking" class="tab-btn active py-3 px-1 text-sm font-semibold flex items-center gap-2">
-              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <span>Live Fleet Tracking</span>
-              <span class="text-[10px] font-mono bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">GET /api/tracking</span>
+              <span class="text-[10px] font-mono bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full">GET /api/tracking</span>
             </button>
 
             <!-- Tab 2: Vehicle & Driver Assignments -->
@@ -174,6 +174,15 @@
               </svg>
               <span>Vehicle & Driver Assignments</span>
               <span class="text-[10px] font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">POST &amp; GET /api/assignments</span>
+            </button>
+
+            <!-- Tab 3: Dispatch & Route Optimization -->
+            <button id="tab-btn-dispatch" class="tab-btn py-3 px-1 text-sm font-semibold flex items-center gap-2">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Dispatch &amp; Optimization</span>
+              <span class="text-[10px] font-mono bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">OSRM / Java</span>
             </button>
           </nav>
 
@@ -243,7 +252,7 @@
           <!-- Map Toolbar -->
           <div class="p-3 sm:p-4 border-b border-slate-200 bg-white flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+              <div class="w-9 h-9 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
@@ -251,7 +260,7 @@
               <div>
                 <div class="flex items-center gap-2">
                   <h2 class="text-base font-bold text-slate-900">Live Fleet Map Tracking</h2>
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-50 text-red-700 border border-red-200">
                     Mbombela
                   </span>
                   <span id="map-engine-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
@@ -274,7 +283,7 @@
               </span>
 
               <!-- Vehicle Focus Dropdown -->
-              <select id="map-vehicle-focus" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-blue-500">
+              <select id="map-vehicle-focus" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:ring-2 focus:ring-red-500">
                 <option value="">Center Vehicle...</option>
               </select>
 
@@ -284,7 +293,7 @@
               </button>
 
               <!-- Google Maps Key Guide Button -->
-              <button id="btn-open-gmaps-guide" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors flex items-center gap-1.5" title="Step-by-step guide to create a Google Maps API Key">
+              <button id="btn-open-gmaps-guide" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors flex items-center gap-1.5" title="Step-by-step guide to create a Google Maps API Key">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
@@ -319,7 +328,7 @@
                   placeholder="Paste AIzaSy... key" 
                   class="px-2.5 py-1 text-xs bg-slate-50 border border-slate-300 rounded-lg w-44 font-mono focus:ring-2 focus:ring-blue-500"
                 />
-                <button id="btn-activate-gmaps-key" class="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors whitespace-nowrap">
+                <button id="btn-activate-gmaps-key" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors whitespace-nowrap">
                   Activate
                 </button>
                 <button id="btn-dismiss-gmaps-banner" class="text-slate-400 hover:text-slate-600 p-1" title="Dismiss banner">
@@ -363,7 +372,7 @@
             <!-- Bottom Floating HUD: Fleet Stats -->
             <div class="absolute bottom-3 left-3 z-10 bg-white/90 backdrop-blur-xs border border-slate-200 rounded-lg px-3 py-2 shadow-xs text-xs flex items-center gap-3">
               <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                <span class="w-2 h-2 rounded-full bg-red-600"></span>
                 <span class="text-slate-600 font-medium">Active Fleet:</span>
                 <strong id="hud-active-vehicles" class="font-mono text-slate-900">0</strong>
               </div>
@@ -393,7 +402,7 @@
                   id="tracking-search-input" 
                   type="text" 
                   placeholder="Filter by ID, plate, or driver..." 
-                  class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                 />
                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -401,7 +410,7 @@
               </div>
 
               <!-- Status Filter Select -->
-              <select id="tracking-status-filter" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+              <select id="tracking-status-filter" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-red-500">
                 <option value="ALL">All Statuses</option>
                 <option value="ACTIVE">Active</option>
                 <option value="IN_TRANSIT">In Transit</option>
@@ -450,19 +459,20 @@
             </button>
           </div>
 
-          <!-- Table Container -->
-          <div class="overflow-x-auto">
+          <!-- Table Container with visible, draggable scrollbars -->
+          <div id="tracking-table-scroll-container" class="overflow-x-auto overflow-y-auto max-h-[460px] scrollable-touch-body relative">
             <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                  <th class="py-3 px-4">Vehicle ID</th>
-                  <th class="py-3 px-4">Plate / Model</th>
-                  <th class="py-3 px-4">Assigned Driver</th>
-                  <th class="py-3 px-4">Status</th>
-                  <th class="py-3 px-4">Current Speed</th>
-                  <th class="py-3 px-4">Location &amp; Street Address</th>
-                  <th class="py-3 px-4">Fuel / Energy</th>
-                  <th class="py-3 px-4">Last Ping</th>
+              <thead class="sticky top-0 z-10 shadow-2xs">
+                <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                  <th class="py-3 px-4 bg-slate-50">Vehicle ID</th>
+                  <th class="py-3 px-4 bg-slate-50">Plate / Model</th>
+                  <th class="py-3 px-4 bg-slate-50">Assigned Driver</th>
+                  <th class="py-3 px-4 bg-slate-50">Status</th>
+                  <th class="py-3 px-4 bg-slate-50">Current Speed</th>
+                  <th class="py-3 px-4 bg-slate-50">Location &amp; Street Address</th>
+                  <th class="py-3 px-4 bg-slate-50">Fuel Level</th>
+                  <th class="py-3 px-4 bg-slate-50">Battery &amp; Voltage</th>
+                  <th class="py-3 px-4 bg-slate-50">Last Ping</th>
                 </tr>
               </thead>
               <tbody id="tracking-table-body" class="divide-y divide-slate-100 text-sm">
@@ -471,10 +481,25 @@
             </table>
           </div>
 
+          <!-- Table Bottom Bar with Quick Scroll controls for trackpad users -->
+          <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+            <span class="text-[11px]">Tip: Use the scroll bar or quick buttons to navigate rows</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="document.getElementById('tracking-table-scroll-container').scrollBy({top: -160, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-1 shadow-2xs" title="Scroll table up">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                <span>Scroll Up</span>
+              </button>
+              <button type="button" onclick="document.getElementById('tracking-table-scroll-container').scrollBy({top: 160, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-1 shadow-2xs" title="Scroll table down">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <span>Scroll Down</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Loading Indicator -->
           <div id="tracking-loading" class="hidden p-8 text-center bg-white">
             <div class="inline-flex items-center gap-2 text-sm text-slate-500 font-medium">
-              <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg class="animate-spin h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -505,7 +530,7 @@
           <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
             <div class="p-5 border-b border-slate-200 bg-slate-50/50">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-blue-100 text-blue-800 font-mono">POST</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-red-100 text-red-800 font-mono">POST</span>
                 <span class="font-mono text-xs text-slate-600">/api/assignments</span>
               </div>
               <h2 class="text-base font-bold text-slate-900 mt-1">Assign Vehicle to Driver</h2>
@@ -527,7 +552,7 @@
                     min="1" 
                     placeholder="e.g. 1" 
                     required 
-                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
                   />
                   <div class="absolute right-3 top-2.5 text-xs text-slate-400 font-mono">{"vehicle":{"vehicleId": X}}</div>
                 </div>
@@ -547,7 +572,7 @@
                     min="1" 
                     placeholder="e.g. 12" 
                     required 
-                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
                   />
                   <div class="absolute right-3 top-2.5 text-xs text-slate-400 font-mono">{"driver":{"driverId": Y}}</div>
                 </div>
@@ -558,19 +583,19 @@
               <div class="p-3 bg-slate-900 text-slate-300 rounded-lg text-xs font-mono">
                 <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
                   <span>Target JSON Payload</span>
-                  <span class="text-emerald-400">application/json</span>
+                  <span class="text-red-400">application/json</span>
                 </div>
-                <div class="text-blue-300">{</div>
-                <div class="pl-4 text-emerald-300">"vehicle": <span class="text-amber-200">{"vehicleId": <span id="preview-vehicle-id">...</span>}</span>,</div>
-                <div class="pl-4 text-emerald-300">"driver": <span class="text-amber-200">{"driverId": <span id="preview-driver-id">...</span>}</span></div>
-                <div class="text-blue-300">}</div>
+                <div class="text-red-300">{</div>
+                <div class="pl-4 text-slate-300">"vehicle": <span class="text-amber-200">{"vehicleId": <span id="preview-vehicle-id">...</span>}</span>,</div>
+                <div class="pl-4 text-slate-300">"driver": <span class="text-amber-200">{"driverId": <span id="preview-driver-id">...</span>}</span></div>
+                <div class="text-red-300">}</div>
               </div>
 
               <!-- Submit Button -->
               <button 
                 type="submit" 
                 id="btn-submit-assignment" 
-                class="w-full py-2.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all"
+                class="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-lg shadow-xs flex items-center justify-center gap-2 transition-all"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -632,15 +657,36 @@
               <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Use the form on the left to assign your first vehicle to a registered driver.</p>
             </div>
 
-            <!-- Assignments List Container -->
-            <div id="assignments-list" class="p-4 space-y-3">
-              <!-- Dynamically populated by app.js -->
+            <!-- Assignments List Container with scrollbar -->
+            <div id="assignments-list-container" class="max-h-[500px] overflow-y-auto scrollable-touch-body">
+              <div id="assignments-list" class="p-4 space-y-3">
+                <!-- Dynamically populated by app.js -->
+              </div>
+            </div>
+
+            <!-- Assignments scroll controls -->
+            <div class="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-1.5 text-xs">
+              <button type="button" onclick="document.getElementById('assignments-list-container').scrollBy({top: -140, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-1 shadow-2xs" title="Scroll up">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                <span>Up</span>
+              </button>
+              <button type="button" onclick="document.getElementById('assignments-list-container').scrollBy({top: 140, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-1 shadow-2xs" title="Scroll down">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <span>Down</span>
+              </button>
             </div>
 
           </div>
 
         </div>
 
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: DISPATCH & ROUTE OPTIMIZATION (REACT) -->
+      <!-- ========================================== -->
+      <section id="view-dispatch" class="hidden">
+        <div id="root"></div>
       </section>
 
     </main>
@@ -660,22 +706,32 @@
     </footer>
 
     <!-- Settings / Config Modal -->
-    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 space-y-5">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 class="text-base font-bold text-slate-900">Frontend Configuration</h3>
-          <button id="btn-close-settings" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden">
+        <!-- Modal Sticky Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5 bg-white shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center border border-red-100">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Frontend Configuration</h3>
+              <p class="text-[11px] text-slate-500">Backend connectivity &amp; credentials</p>
+            </div>
+          </div>
+          <button id="btn-close-settings" class="text-slate-400 hover:text-slate-700 p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Close settings">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <div class="space-y-4 text-sm">
+        <!-- Modal Scrollable Body with prominent trackpad scrollbar -->
+        <div id="settings-scroll-body" class="p-4 sm:p-6 overflow-y-auto space-y-4 text-sm flex-1 scrollable-touch-body">
           <div>
             <label for="settings-api-url" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Backend API Base URL</label>
             <input 
               type="text" 
               id="settings-api-url" 
-              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" 
               placeholder="http://localhost:8080/fleetcore-1.0.0-SNAPSHOT/api"
             />
             <p class="text-[11px] text-slate-500 mt-1">Defaults to your local Jakarta EE application deployment context.</p>
@@ -686,7 +742,7 @@
             <input 
               type="text" 
               id="settings-client-id" 
-              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" 
               placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com"
             />
             <p class="text-[11px] text-slate-500 mt-1">Obtained from Google Cloud Console &gt; APIs &amp; Services &gt; Credentials.</p>
@@ -695,32 +751,74 @@
           <div>
             <div class="flex items-center justify-between mb-1">
               <label for="settings-gmaps-key" class="block text-xs font-semibold text-slate-700 uppercase">Google Maps API Key</label>
-              <button type="button" id="btn-modal-open-gmaps-guide" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 underline">
+              <button type="button" id="btn-modal-open-gmaps-guide" class="text-[11px] font-semibold text-red-600 hover:text-red-800 underline">
                 How to create this key?
               </button>
             </div>
             <input 
               type="password" 
               id="settings-gmaps-key" 
-              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" 
               placeholder="AIzaSy..."
             />
             <p class="text-[11px] text-slate-500 mt-1">Enables official Google Maps JavaScript API with satellite imagery, terrain, and traffic layers.</p>
           </div>
 
-          <div class="p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-900 space-y-1">
-            <div class="font-bold">Jakarta EE CORS Reminder:</div>
-            <div>Make sure your Jakarta EE REST application includes CORS headers:</div>
-            <code class="block font-mono bg-white p-2 rounded text-[11px] text-slate-800 mt-1">
-              Access-Control-Allow-Origin: *<br>
-              Access-Control-Allow-Headers: Authorization, Content-Type<br>
-              Access-Control-Allow-Methods: GET, POST, OPTIONS
-            </code>
+          <!-- Diagnostics & Connection Tester -->
+          <div class="pt-2 border-t border-slate-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-800 uppercase tracking-wide">Connection Diagnostics</span>
+              <button 
+                type="button" 
+                id="btn-test-connection" 
+                class="px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Test Connection Now</span>
+              </button>
+            </div>
+            
+            <div id="connection-test-results" class="hidden p-3 rounded-lg border text-xs font-mono space-y-2 max-h-56 overflow-y-auto scrollable-touch-body">
+              <!-- Live diagnostic output dynamically populated here -->
+            </div>
+          </div>
+
+          <div class="p-3 bg-amber-50/70 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1.5">
+            <div class="font-bold flex items-center gap-1.5 text-amber-950">
+              <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>HTTPS Cloud App &harr; Localhost Mixed Content Note</span>
+            </div>
+            <p class="text-[11px] leading-relaxed text-amber-900">
+              Because this frontend runs on a secure HTTPS cloud domain (<code>https://ais-dev-...run.app</code>), browsers will block unencrypted <code>http://localhost:8080</code> requests by default (Mixed Content security policy).
+            </p>
+            <p class="text-[11px] text-amber-800 font-medium">
+              Recommended: Use <code class="bg-white/80 px-1 py-0.5 rounded border border-amber-300">npx ngrok http 8080</code> to create a secure tunnel (e.g. <code>https://dry-uncouth-grandkid.ngrok-free.dev/fleetcore-1.0.0-SNAPSHOT/api</code>) and paste it above!
+            </p>
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-save-settings" class="px-4 py-2 text-xs font-semibold bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors">
+        <!-- Sticky Footer with Quick Scroll buttons & Save -->
+        <div class="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="btn-reset-api-url" class="text-xs text-slate-500 hover:text-slate-800 underline">
+              Reset URL
+            </button>
+            <span class="text-slate-300">|</span>
+            <!-- Trackpad helper scroll buttons -->
+            <button type="button" onclick="document.getElementById('settings-scroll-body').scrollBy({top: -150, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-0.5" title="Scroll up">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+              <span>Up</span>
+            </button>
+            <button type="button" onclick="document.getElementById('settings-scroll-body').scrollBy({top: 150, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-0.5" title="Scroll down">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <span>Down</span>
+            </button>
+          </div>
+          <button id="btn-save-settings" class="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm">
             Save &amp; Apply
           </button>
         </div>
@@ -728,11 +826,11 @@
     </div>
 
     <!-- JWT Token Inspector Modal -->
-    <div id="token-inspector-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-200 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div id="token-inspector-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5 bg-white shrink-0">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+            <div class="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
@@ -742,34 +840,45 @@
               <p class="text-xs text-slate-500">Examine or replace the active Authorization token</p>
             </div>
           </div>
-          <button id="btn-close-token-inspector" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <button id="btn-close-token-inspector" class="text-slate-400 hover:text-slate-700 p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <div id="token-status-summary"></div>
+        <div id="token-inspector-scroll-body" class="p-4 sm:p-6 overflow-y-auto space-y-4 text-sm flex-1 scrollable-touch-body">
+          <div id="token-status-summary"></div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Raw JWT Token (Stored in sessionStorage)</label>
-          <textarea 
-            id="token-raw-content" 
-            rows="3" 
-            class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
-            placeholder="Paste your raw JWT token string here..."
-          ></textarea>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Raw JWT Token (Stored in sessionStorage)</label>
+            <textarea 
+              id="token-raw-content" 
+              rows="3" 
+              class="w-full px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 scrollable-touch-body" 
+              placeholder="Paste your raw JWT token string here..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Decoded Payload Claims</label>
+            <pre id="token-claims-content" class="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs font-mono max-h-48 overflow-y-auto scrollable-touch-body">// No claims</pre>
+          </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Decoded Payload Claims</label>
-          <pre id="token-claims-content" class="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs font-mono max-h-48 overflow-y-auto">// No claims</pre>
-        </div>
-
-        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50 shrink-0">
           <button id="btn-clear-token" class="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors">
             Clear Token (Sign Out)
           </button>
           <div class="flex items-center gap-2">
-            <button id="btn-save-custom-token" class="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+            <!-- Trackpad helper buttons -->
+            <button type="button" onclick="document.getElementById('token-inspector-scroll-body').scrollBy({top: -120, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-0.5" title="Scroll up">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+              <span>Up</span>
+            </button>
+            <button type="button" onclick="document.getElementById('token-inspector-scroll-body').scrollBy({top: 120, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-0.5" title="Scroll down">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <span>Down</span>
+            </button>
+            <button id="btn-save-custom-token" class="px-4 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-xs">
               Save Custom Token
             </button>
           </div>
@@ -778,11 +887,11 @@
     </div>
 
     <!-- Google Maps API Key Setup Guide Modal -->
-    <div id="gmaps-guide-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div id="gmaps-guide-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5 bg-white shrink-0">
           <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+            <div class="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
               </svg>
@@ -792,23 +901,23 @@
               <p class="text-xs text-slate-500">Fast 4-step setup in Google Cloud Console</p>
             </div>
           </div>
-          <button id="btn-close-gmaps-guide" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <button id="btn-close-gmaps-guide" class="text-slate-400 hover:text-slate-700 p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <!-- Step-by-Step Instructions -->
-        <div class="space-y-3.5 text-xs text-slate-700">
+        <!-- Step-by-Step Instructions with visible scrollbar -->
+        <div id="gmaps-guide-scroll-body" class="p-4 sm:p-6 overflow-y-auto space-y-3.5 text-xs text-slate-700 flex-1 scrollable-touch-body">
           <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</div>
+            <div class="w-6 h-6 rounded-full bg-red-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</div>
             <div>
               <div class="font-bold text-slate-900">Go to Google Cloud Console</div>
-              <p class="text-slate-600 mt-0.5">Visit <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-blue-600 underline font-medium">console.cloud.google.com</a> and sign in with your Google Account. If needed, create or select a project (e.g. <em>"Fleet Management"</em>).</p>
+              <p class="text-slate-600 mt-0.5">Visit <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="text-red-600 underline font-medium">console.cloud.google.com</a> and sign in with your Google Account. If needed, create or select a project (e.g. <em>"Fleet Management"</em>).</p>
             </div>
           </div>
 
           <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</div>
+            <div class="w-6 h-6 rounded-full bg-red-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</div>
             <div>
               <div class="font-bold text-slate-900">Enable "Maps JavaScript API"</div>
               <p class="text-slate-600 mt-0.5">In the search bar at top or via <strong>APIs &amp; Services &gt; Library</strong>, search for <code>Maps JavaScript API</code> and click <strong>Enable</strong>.</p>
@@ -816,7 +925,7 @@
           </div>
 
           <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</div>
+            <div class="w-6 h-6 rounded-full bg-red-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</div>
             <div>
               <div class="font-bold text-slate-900">Create an API Key</div>
               <p class="text-slate-600 mt-0.5">Navigate to <strong>APIs &amp; Services &gt; Credentials</strong> &rarr; Click <strong>+ CREATE CREDENTIALS</strong> &rarr; Select <strong>API key</strong>. Your key (starting with <code>AIzaSy...</code>) will be generated instantly.</p>
@@ -824,7 +933,7 @@
           </div>
 
           <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <div class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">4</div>
+            <div class="w-6 h-6 rounded-full bg-red-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">4</div>
             <div>
               <div class="font-bold text-slate-900">(Recommended) Restrict the Key</div>
               <p class="text-slate-600 mt-0.5">Under "API restrictions", select <strong>Restrict key</strong> and check only <strong>Maps JavaScript API</strong>. Google provides $200 free credit monthly (approx 28,500 free map loads every month).</p>
@@ -832,18 +941,37 @@
           </div>
         </div>
 
-        <!-- Quick Key Input Form -->
-        <div class="pt-2 border-t border-slate-100">
-          <label for="guide-input-gmaps-key" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Enter your API Key to activate Google Maps now:</label>
-          <div class="flex items-center gap-2">
-            <input 
-              type="password" 
-              id="guide-input-gmaps-key" 
-              placeholder="AIzaSy..." 
-              class="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-            <button id="btn-guide-save-key" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap">
-              Save &amp; Activate
+        <!-- Quick Key Input Form & Navigation Footer -->
+        <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0 space-y-3">
+          <div>
+            <label for="guide-input-gmaps-key" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Enter your API Key to activate Google Maps now:</label>
+            <div class="flex items-center gap-2">
+              <input 
+                type="password" 
+                id="guide-input-gmaps-key" 
+                placeholder="AIzaSy..." 
+                class="flex-1 px-3 py-2 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" 
+              />
+              <button id="btn-guide-save-key" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shadow-xs">
+                Save &amp; Activate
+              </button>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between pt-1 border-t border-slate-200/60">
+            <!-- Trackpad helper scroll buttons -->
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="document.getElementById('gmaps-guide-scroll-body').scrollBy({top: -120, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-0.5" title="Scroll up">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                <span>Up</span>
+              </button>
+              <button type="button" onclick="document.getElementById('gmaps-guide-scroll-body').scrollBy({top: 120, behavior: 'smooth'})" class="px-2 py-1 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 flex items-center gap-0.5" title="Scroll down">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <span>Down</span>
+              </button>
+            </div>
+            <button id="btn-done-gmaps-guide" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors">
+              Close Guide
             </button>
           </div>
         </div>
@@ -873,6 +1001,8 @@
 
     <!-- Main Modular Application Script -->
     <script type="module" src="./app.js"></script>
+    <!-- React Component Application (DispatchRoutingView & Leaflet GIS) -->
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 

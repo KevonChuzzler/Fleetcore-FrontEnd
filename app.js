@@ -602,7 +602,14 @@ function renderTrackingTable() {
     const speed = item.speed != null ? `${Math.round(item.speed)} km/h` : '0 km/h';
     const lat = item.latitude != null ? Number(item.latitude).toFixed(4) : '—';
     const lng = item.longitude != null ? Number(item.longitude).toFixed(4) : '—';
-    const fuel = item.fuelLevel != null ? Math.round(item.fuelLevel) : (item.batteryLevel ?? 85);
+    const fuel = item.fuelLevel != null ? Math.round(item.fuelLevel) : (item.fuel ?? 75);
+    // Distinct battery percentage and battery voltage calculations
+    const batteryPct = item.batteryLevel != null 
+      ? Math.round(item.batteryLevel) 
+      : (item.battery != null ? Math.round(item.battery) : Math.min(100, Math.max(30, Math.round(98 - ((Number(vId) || 1) * 7) % 45))));
+    const batteryVolts = item.batteryVoltage != null 
+      ? Number(item.batteryVoltage).toFixed(1) 
+      : (item.voltage != null ? Number(item.voltage).toFixed(1) : (Number(vId) % 2 === 0 ? '12.6' : '27.8'));
     const status = (item.status || 'ACTIVE').toUpperCase();
     const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
     const address = getVehicleAddress(item);
@@ -623,13 +630,13 @@ function renderTrackingTable() {
 
     return `
       <tr 
-        class="fleet-table-row border-b border-slate-100 hover:bg-blue-50/50 cursor-pointer transition-colors group" 
+        class="fleet-table-row border-b border-slate-100 hover:bg-red-50/40 cursor-pointer transition-colors group" 
         onclick="window.focusVehicleOnMap && window.focusVehicleOnMap('${vId}')"
         title="Click to locate Vehicle #${vId} on Live Map"
       >
         <td class="py-3.5 px-4 font-mono text-xs font-semibold text-slate-800">
           <div class="flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -637,7 +644,7 @@ function renderTrackingTable() {
           </div>
         </td>
         <td class="py-3.5 px-4">
-          <div class="font-medium text-slate-900 text-sm group-hover:text-blue-700 transition-colors">${plate}</div>
+          <div class="font-medium text-slate-900 text-sm group-hover:text-red-700 transition-colors">${plate}</div>
           <div class="text-xs text-slate-500">${model}</div>
         </td>
         <td class="py-3.5 px-4">
@@ -655,7 +662,7 @@ function renderTrackingTable() {
         </td>
         <td class="py-3.5 px-4 min-w-[220px]">
           <div class="flex items-center gap-1.5 font-medium text-slate-900 text-xs">
-            <svg class="w-3.5 h-3.5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -663,12 +670,25 @@ function renderTrackingTable() {
           </div>
           <div class="text-[11px] font-mono text-slate-400 pl-5">${lat !== '—' ? `${lat}, ${lng}` : 'No GPS Fix'}</div>
         </td>
+        <!-- Dedicated Fuel Column -->
         <td class="py-3.5 px-4">
           <div class="flex items-center gap-2">
-            <div class="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+            <div class="w-14 bg-slate-200 rounded-full h-1.5 overflow-hidden">
               <div class="h-1.5 rounded-full ${fuel < 20 ? 'bg-rose-500' : fuel < 50 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: ${fuel}%"></div>
             </div>
-            <span class="text-xs font-mono text-slate-600">${fuel}%</span>
+            <span class="text-xs font-mono font-medium text-slate-700">${fuel}%</span>
+          </div>
+        </td>
+        <!-- Dedicated Battery & Voltage Column -->
+        <td class="py-3.5 px-4 whitespace-nowrap">
+          <div class="flex items-center gap-2">
+            <div class="w-14 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+              <div class="h-1.5 rounded-full ${batteryPct < 25 ? 'bg-rose-500' : batteryPct < 60 ? 'bg-amber-500' : 'bg-sky-500'}" style="width: ${batteryPct}%"></div>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-mono font-bold text-slate-900">${batteryVolts}V</span>
+              <span class="text-[10px] text-slate-400 font-mono">${batteryPct}% charge</span>
+            </div>
           </div>
         </td>
         <td class="py-3.5 px-4 text-xs text-slate-500 font-mono">
@@ -1195,7 +1215,13 @@ function generateInfoWindowHtml(vehicle) {
   const model = vehicle.vehicle?.model ?? 'Commercial Unit';
   const driver = vehicle.driver?.name ?? (vehicle.driver?.driverId ? `Driver #${vehicle.driver.driverId}` : 'Unassigned');
   const speed = vehicle.speed != null ? Math.round(vehicle.speed) : 0;
-  const fuel = vehicle.fuelLevel != null ? Math.round(vehicle.fuelLevel) : 85;
+  const fuel = vehicle.fuelLevel != null ? Math.round(vehicle.fuelLevel) : (vehicle.fuel ?? 75);
+  const batteryPct = vehicle.batteryLevel != null 
+    ? Math.round(vehicle.batteryLevel) 
+    : (vehicle.battery != null ? Math.round(vehicle.battery) : Math.min(100, Math.max(30, Math.round(98 - ((Number(vId) || 1) * 7) % 45))));
+  const batteryVolts = vehicle.batteryVoltage != null 
+    ? Number(vehicle.batteryVoltage).toFixed(1) 
+    : (vehicle.voltage != null ? Number(vehicle.voltage).toFixed(1) : (Number(vId) % 2 === 0 ? '12.6' : '27.8'));
   const status = (vehicle.status || 'ACTIVE').toUpperCase();
   const time = vehicle.timestamp ? new Date(vehicle.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
   const lat = Number(vehicle.latitude).toFixed(4);
@@ -1220,14 +1246,14 @@ function generateInfoWindowHtml(vehicle) {
         <div class="text-slate-500 font-medium">${model}</div>
 
         <!-- Street / Address Location Card -->
-        <div class="bg-blue-50/60 border border-blue-100 rounded-lg p-2">
+        <div class="bg-red-50/70 border border-red-100 rounded-lg p-2">
           <div class="flex items-start gap-1.5">
-            <svg class="w-3.5 h-3.5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <div class="min-w-0">
-              <div class="text-[9px] font-bold uppercase tracking-wider text-blue-700">Street / Location</div>
+              <div class="text-[9px] font-bold uppercase tracking-wider text-red-700">Street / Location</div>
               <div class="text-xs font-semibold text-slate-900 leading-snug break-words" data-addr-key="${addrKey}">${address}</div>
             </div>
           </div>
@@ -1239,15 +1265,37 @@ function generateInfoWindowHtml(vehicle) {
         </div>
         <div class="flex items-center justify-between">
           <span class="text-slate-500">Speed:</span>
-          <strong class="font-mono text-blue-600">${speed} km/h</strong>
+          <strong class="font-mono text-red-600">${speed} km/h</strong>
         </div>
+        <!-- Separate Fuel Level -->
         <div class="flex items-center justify-between">
-          <span class="text-slate-500">Fuel/Battery:</span>
+          <span class="text-slate-500 flex items-center gap-1">
+            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Fuel:
+          </span>
           <div class="flex items-center gap-1.5">
             <div class="w-12 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-              <div class="h-full ${fuel < 20 ? 'bg-rose-500' : 'bg-emerald-500'}" style="width: ${fuel}%"></div>
+              <div class="h-full ${fuel < 20 ? 'bg-rose-500' : fuel < 50 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: ${fuel}%"></div>
             </div>
-            <span class="font-mono">${fuel}%</span>
+            <span class="font-mono font-medium">${fuel}%</span>
+          </div>
+        </div>
+        <!-- Separate Battery with Voltage -->
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500 flex items-center gap-1">
+            <svg class="w-3 h-3 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Battery:
+          </span>
+          <div class="flex items-center gap-1.5">
+            <div class="w-12 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+              <div class="h-full ${batteryPct < 25 ? 'bg-rose-500' : batteryPct < 60 ? 'bg-amber-500' : 'bg-sky-500'}" style="width: ${batteryPct}%"></div>
+            </div>
+            <span class="font-mono font-bold text-slate-900">${batteryVolts}V</span>
+            <span class="text-[10px] text-slate-400 font-mono">(${batteryPct}%)</span>
           </div>
         </div>
         <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono pt-1 border-t border-slate-100">
@@ -1431,6 +1479,16 @@ function triggerRealtimeStep() {
         const speedJitter = (Math.random() - 0.5) * 3;
         const newSpeed = Math.round(Math.max(35, baseSpeed + speedJitter));
 
+        // Subtle realistic fuel drain and alternator battery charging voltage
+        const currentFuel = v.fuelLevel != null ? v.fuelLevel : 75;
+        const newFuel = Math.max(12, Number((currentFuel - 0.05).toFixed(1)));
+        const currentBatt = v.batteryLevel != null ? v.batteryLevel : 90;
+        const is24V = (v.batteryVoltage != null && v.batteryVoltage > 18) || (Number(v.vehicle?.vehicleId ?? v.vehicleId) % 2 !== 0);
+        // Commercial vehicle alternator charging voltage jitter
+        const baseVolts = is24V ? 28.2 : 14.1;
+        const voltJitter = Number(((Math.random() - 0.5) * 0.4).toFixed(1));
+        const newVoltage = Number((baseVolts + voltJitter).toFixed(1));
+
         return {
           ...v,
           routeKey,
@@ -1441,6 +1499,9 @@ function triggerRealtimeStep() {
           longitude: Number(newLng.toFixed(5)),
           address: activeStreet,
           speed: newSpeed,
+          fuelLevel: newFuel,
+          batteryLevel: currentBatt,
+          batteryVoltage: newVoltage,
           timestamp: new Date().toISOString()
         };
       }
@@ -1737,14 +1798,30 @@ function updateDataSourceUI(errorMsg = '') {
     }
   } else if (AppState.activeSource === 'LIVE_BACKEND_ERROR') {
     if (badge) {
-      badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800 border border-rose-200 cursor-pointer';
+      badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800 border border-rose-200 cursor-pointer hover:bg-rose-200 transition-colors';
       badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> Live Backend Error';
-      badge.title = errorMsg;
+      badge.title = `${errorMsg} - Click to test & diagnose`;
+      badge.onclick = () => {
+        document.getElementById('btn-open-settings')?.click();
+        setTimeout(() => document.getElementById('btn-test-connection')?.click(), 100);
+      };
     }
     if (banner) {
       banner.className = 'p-3 bg-rose-50 border-b border-rose-200 text-xs text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all';
       bannerText.innerHTML = `<strong>Data Source: Live Connection Failed</strong> &bull; Unable to reach <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-rose-200">${AppState.apiBaseUrl}</code>. (${errorMsg})`;
-      bannerAction.innerHTML = `<button id="btn-banner-switch" class="font-semibold underline text-rose-800 hover:text-rose-950">Use Mock Demo Data</button>`;
+      bannerAction.innerHTML = `
+        <div class="flex items-center gap-3">
+          <button id="btn-banner-diagnose" class="font-semibold text-blue-700 hover:text-blue-900 underline flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Diagnose Connection
+          </button>
+          <button id="btn-banner-switch" class="font-semibold underline text-rose-800 hover:text-rose-950">Use Mock Data</button>
+        </div>
+      `;
+      document.getElementById('btn-banner-diagnose')?.addEventListener('click', () => {
+        document.getElementById('btn-open-settings')?.click();
+        setTimeout(() => document.getElementById('btn-test-connection')?.click(), 100);
+      });
       document.getElementById('btn-banner-switch')?.addEventListener('click', () => setDataSourceMode('mock'));
     }
   } else {
@@ -1904,6 +1981,8 @@ function getSampleTrackingData() {
       address: 'N4 Toll Route, Stadium Flyover, Mbombela',
       speed: 76.4,
       fuelLevel: 82,
+      batteryLevel: 94,
+      batteryVoltage: 27.8,
       status: 'IN_TRANSIT',
       timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString()
     },
@@ -1916,6 +1995,8 @@ function getSampleTrackingData() {
       address: 'Mbombela Freight Depot, 44 Ferreira St, Mbombela CBD',
       speed: 0,
       fuelLevel: 94,
+      batteryLevel: 86,
+      batteryVoltage: 12.6,
       status: 'IDLE',
       timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString()
     },
@@ -1932,6 +2013,8 @@ function getSampleTrackingData() {
       address: 'R40 (Madiba Dr), Crossing Junction, Mbombela',
       speed: 64.0,
       fuelLevel: 68,
+      batteryLevel: 91,
+      batteryVoltage: 28.1,
       status: 'IN_TRANSIT',
       timestamp: new Date(Date.now() - 1000 * 60 * 1).toISOString()
     },
@@ -1944,6 +2027,8 @@ function getSampleTrackingData() {
       address: 'Commercial Fleet Workshop, 18 Samora Machel Dr (R104), West Acres',
       speed: 0,
       fuelLevel: 18,
+      batteryLevel: 42,
+      batteryVoltage: 22.4,
       status: 'MAINTENANCE',
       timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString()
     },
@@ -1960,6 +2045,8 @@ function getSampleTrackingData() {
       address: 'N4 Eastern Bypass (KM 50), Orchards, Mbombela',
       speed: 78.5,
       fuelLevel: 76,
+      batteryLevel: 96,
+      batteryVoltage: 28.4,
       status: 'IN_TRANSIT',
       timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString()
     },
@@ -1976,6 +2063,8 @@ function getSampleTrackingData() {
       address: 'Samora Machel Dr (R104), Henshall St Crossing, Mbombela',
       speed: 48.2,
       fuelLevel: 88,
+      batteryLevel: 79,
+      batteryVoltage: 13.8,
       status: 'IN_TRANSIT',
       timestamp: new Date(Date.now() - 1000 * 60 * 3).toISOString()
     },
@@ -1988,6 +2077,8 @@ function getSampleTrackingData() {
       address: 'Riverside Industrial Terminal, 12 Rapid St, Mbombela',
       speed: 0,
       fuelLevel: 61,
+      batteryLevel: 83,
+      batteryVoltage: 25.6,
       status: 'IDLE',
       timestamp: new Date(Date.now() - 1000 * 60 * 18).toISOString()
     }
@@ -2043,21 +2134,29 @@ function switchTab(tabId) {
 
   const tabTrackingBtn = document.getElementById('tab-btn-tracking');
   const tabAssignmentsBtn = document.getElementById('tab-btn-assignments');
+  const tabDispatchBtn = document.getElementById('tab-btn-dispatch');
   const viewTracking = document.getElementById('view-tracking');
   const viewAssignments = document.getElementById('view-assignments');
+  const viewDispatch = document.getElementById('view-dispatch');
+
+  tabTrackingBtn?.classList.remove('active');
+  tabAssignmentsBtn?.classList.remove('active');
+  tabDispatchBtn?.classList.remove('active');
+  viewTracking?.classList.add('hidden');
+  viewAssignments?.classList.add('hidden');
+  viewDispatch?.classList.add('hidden');
 
   if (tabId === 'tracking') {
     tabTrackingBtn?.classList.add('active');
-    tabAssignmentsBtn?.classList.remove('active');
     viewTracking?.classList.remove('hidden');
-    viewAssignments?.classList.add('hidden');
     loadTrackingData();
-  } else {
+  } else if (tabId === 'assignments') {
     tabAssignmentsBtn?.classList.add('active');
-    tabTrackingBtn?.classList.remove('active');
     viewAssignments?.classList.remove('hidden');
-    viewTracking?.classList.add('hidden');
     loadAssignments();
+  } else if (tabId === 'dispatch') {
+    tabDispatchBtn?.classList.add('active');
+    viewDispatch?.classList.remove('hidden');
   }
 }
 
@@ -2068,9 +2167,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Setup Navigation Tabs
   const tabTrackingBtn = document.getElementById('tab-btn-tracking');
   const tabAssignmentsBtn = document.getElementById('tab-btn-assignments');
+  const tabDispatchBtn = document.getElementById('tab-btn-dispatch');
 
   tabTrackingBtn?.addEventListener('click', () => switchTab('tracking'));
   tabAssignmentsBtn?.addEventListener('click', () => switchTab('assignments'));
+  tabDispatchBtn?.addEventListener('click', () => switchTab('dispatch'));
+
+  // Default to dispatch tab if requested in hash/params or initial view
+  if (window.location.hash === '#dispatch' || window.location.search.includes('dispatch')) {
+    switchTab('dispatch');
+  }
 
   // 3. View 1 Event Listeners (Tracking)
   const refreshTrackingBtn = document.getElementById('btn-refresh-tracking');
@@ -2171,12 +2277,105 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputApiUrl = document.getElementById('settings-api-url');
   const inputClientId = document.getElementById('settings-client-id');
   const inputGmapsKey = document.getElementById('settings-gmaps-key');
+  const btnTestConn = document.getElementById('btn-test-connection');
+  const btnResetApiUrl = document.getElementById('btn-reset-api-url');
+  const testResultsBox = document.getElementById('connection-test-results');
+
+  async function runConnectionDiagnostics() {
+    if (!testResultsBox) return;
+    const targetUrl = (inputApiUrl?.value || AppState.apiBaseUrl).trim().replace(/\/$/, '');
+    testResultsBox.classList.remove('hidden');
+    testResultsBox.className = 'p-3 rounded-lg border bg-slate-900 text-slate-100 text-xs font-mono space-y-2 max-h-56 overflow-y-auto';
+    testResultsBox.innerHTML = `
+      <div class="text-blue-400 font-bold">&gt; Testing backend connection to: ${targetUrl}...</div>
+      <div class="text-slate-400">&gt; Frontend Protocol: ${window.location.protocol} (${window.location.host})</div>
+    `;
+
+    const isFrontendHttps = window.location.protocol === 'https:';
+    const isTargetHttp = targetUrl.startsWith('http://');
+
+    if (isFrontendHttps && isTargetHttp) {
+      testResultsBox.innerHTML += `
+        <div class="p-2 rounded bg-amber-950/80 border border-amber-600 text-amber-200 mt-2">
+          <strong>&#9888; CRITICAL: Mixed Content Security Block Detected!</strong><br>
+          This frontend is hosted on <strong>HTTPS</strong> (${window.location.origin}), but your backend is on unencrypted <strong>HTTP</strong> (${targetUrl}).<br>
+          Browsers automatically block HTTPS to HTTP requests before sending them.
+          <div class="mt-1.5 font-bold text-amber-100">Fix Options:</div>
+          1. <strong>Localtunnel (Fastest &amp; HTTPS):</strong> In your backend terminal, run: <code>npx localtunnel --port 8080</code>, then paste the generated <code>https://...loca.lt/fleetcore-1.0.0-SNAPSHOT/api</code> URL above.<br>
+          2. <strong>Chrome Site Setting:</strong> Click padlock next to URL &rarr; <em>Site Settings</em> &rarr; Set <em>Insecure content</em> to <em>Allow</em>, then reload.
+        </div>
+      `;
+    }
+
+    const token = getStoredToken();
+    const testEndpoints = ['/tracking', ''];
+    let reached = false;
+
+    for (const ep of testEndpoints) {
+      const fullUrl = `${targetUrl}${ep}`;
+      testResultsBox.innerHTML += `<div class="text-slate-300 mt-1">&gt; Pinging GET ${fullUrl}...</div>`;
+      try {
+        const headers = { 
+          'Accept': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(fullUrl, {
+          method: 'GET',
+          headers
+        });
+
+        reached = true;
+        if (res.ok) {
+          const json = await res.json().catch(() => null);
+          const count = Array.isArray(json) ? `${json.length} items returned` : 'JSON response OK';
+          testResultsBox.innerHTML += `
+            <div class="text-emerald-400 font-bold">&check; [SUCCESS] HTTP ${res.status} OK (${count})</div>
+            <div class="text-emerald-300 text-[11px]">&gt; Connected to live Jakarta EE backend!</div>
+          `;
+          break;
+        } else if (res.status === 401) {
+          testResultsBox.innerHTML += `
+            <div class="text-amber-400 font-bold">&check; Backend is reachable! (HTTP 401 Unauthorized)</div>
+            <div class="text-slate-300 text-[11px]">&gt; Your backend security filter is working and requires a JWT Bearer token. Use the "Dev Token" button in the top navbar to inject a test token.</div>
+          `;
+          break;
+        } else if (res.status === 404) {
+          testResultsBox.innerHTML += `
+            <div class="text-amber-400">&gt; Server answered with HTTP 404 (Not Found at ${ep || '/'}). Context path may differ (e.g. <code>/fleetcore/api</code> vs <code>/fleetcore-1.0.0-SNAPSHOT/api</code>).</div>
+          `;
+        } else {
+          testResultsBox.innerHTML += `
+            <div class="text-rose-400">&gt; Server answered with HTTP ${res.status}: ${res.statusText}</div>
+          `;
+        }
+      } catch (fetchErr) {
+        testResultsBox.innerHTML += `
+          <div class="text-rose-400 font-bold">&cross; Request failed: ${fetchErr.name} (${fetchErr.message})</div>
+          <div class="p-2 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[11px] mt-1 space-y-1">
+            <div class="text-amber-300 font-bold">First time using this ngrok URL?</div>
+            <div>Free ngrok accounts show a 1-time browser check screen.</div>
+            <div>👉 <strong>Step:</strong> Open <a href="${targetUrl}" target="_blank" class="text-blue-400 underline font-bold">${targetUrl}</a> in a new tab, click the blue <strong>"Visit Site"</strong> button, then come back and click Test again!</div>
+          </div>
+        `;
+      }
+    }
+  }
+
+  btnTestConn?.addEventListener('click', runConnectionDiagnostics);
+
+  btnResetApiUrl?.addEventListener('click', () => {
+    if (inputApiUrl) {
+      inputApiUrl.value = 'http://localhost:8080/fleetcore-1.0.0-SNAPSHOT/api';
+    }
+  });
 
   if (settingsBtn && settingsModal) {
     settingsBtn.addEventListener('click', () => {
       if (inputApiUrl) inputApiUrl.value = AppState.apiBaseUrl;
       if (inputClientId) inputClientId.value = AppState.googleClientId;
       if (inputGmapsKey) inputGmapsKey.value = AppState.googleMapsApiKey;
+      if (testResultsBox) testResultsBox.classList.add('hidden');
       settingsModal.classList.remove('hidden');
     });
 
@@ -2270,3 +2469,115 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set initial data source mode button highlight
   setDataSourceMode(AppState.dataSourceMode);
 });
+
+// ==========================================
+// 11. Planned Route GIS Layer (OSRM + Leaflet)
+// ==========================================
+let activePlannedPolyline = null;
+let activeStopMarkersGroup = null;
+
+/**
+ * Extracts coordinates from orderedParcels, formats them as lng,lat starting with depot (-25.4753, 30.9694),
+ * calls OSRM Route API, and draws a dashed amber/yellow polyline (#fbbf24) on Leaflet map.
+ */
+export async function drawPlannedRoute(orderedParcels) {
+  const map = AppState.leafletMap || window.currentLeafletMap;
+  if (!map || !window.L) {
+    console.warn('[OSRM] Leaflet map instance not ready');
+    return null;
+  }
+
+  // Ensure any previously drawn planned route and markers are removed
+  if (activePlannedPolyline) {
+    try { map.removeLayer(activePlannedPolyline); } catch (e) {}
+    activePlannedPolyline = null;
+  }
+  if (activeStopMarkersGroup) {
+    try { map.removeLayer(activeStopMarkersGroup); } catch (e) {}
+    activeStopMarkersGroup = null;
+  }
+
+  if (!orderedParcels || orderedParcels.length === 0) return null;
+
+  const depotLng = 30.9694;
+  const depotLat = -25.4753;
+
+  // Format as lng,lat starting with depot
+  const coordPairs = [{ lng: depotLng, lat: depotLat, label: 'Central Depot (Start)' }];
+  orderedParcels.forEach((p, idx) => {
+    const lat = p.lat ?? p.latitude ?? (depotLat + (idx % 2 === 0 ? 0.02 * (idx + 1) : -0.018 * (idx + 1)));
+    const lng = p.lng ?? p.longitude ?? (depotLng + (idx % 2 === 0 ? 0.018 * (idx + 1) : -0.015 * (idx + 1)));
+    coordPairs.push({
+      lng,
+      lat,
+      label: `Stop ${idx + 1}: Parcel #${p.id} (${p.weight ?? 0} kg)`
+    });
+  });
+
+  const coordsParam = coordPairs.map(c => `${c.lng},${c.lat}`).join(';');
+  const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordsParam}?geometries=geojson&overview=full`;
+
+  try {
+    const res = await fetch(osrmUrl);
+    if (!res.ok) throw new Error(`OSRM HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.routes || data.routes.length === 0) throw new Error('No route in OSRM response');
+
+    const geojson = data.routes[0].geometry;
+    activePlannedPolyline = window.L.geoJSON(geojson, {
+      style: {
+        color: '#fbbf24',
+        weight: 5,
+        opacity: 0.95,
+        dashArray: '10, 10',
+        lineCap: 'round',
+        lineJoin: 'round'
+      }
+    }).addTo(map);
+
+    // Add stop markers
+    const stopMarkers = window.L.layerGroup();
+    coordPairs.forEach((pt, idx) => {
+      const isDepot = idx === 0;
+      const markerHtml = isDepot
+        ? `<div style="background:#0f172a;color:#fbbf24;border:2px solid #fbbf24;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;">HQ</div>`
+        : `<div style="background:#fbbf24;color:#78350f;border:2px solid #fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.25);">${idx}</div>`;
+
+      const icon = window.L.divIcon({
+        html: markerHtml,
+        className: 'planned-route-stop-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const m = window.L.marker([pt.lat, pt.lng], { icon });
+      m.bindPopup(`<strong>${pt.label}</strong>`);
+      stopMarkers.addLayer(m);
+    });
+    stopMarkers.addTo(map);
+    activeStopMarkersGroup = stopMarkers;
+
+    if (activePlannedPolyline.getBounds().isValid()) {
+      map.fitBounds(activePlannedPolyline.getBounds(), { padding: [40, 40] });
+    }
+
+    return activePlannedPolyline;
+  } catch (err) {
+    console.warn('[OSRM] Error contacting OSRM service, drawing fallback polyline:', err);
+    activePlannedPolyline = window.L.polyline(coordPairs.map(c => [c.lat, c.lng]), {
+      color: '#fbbf24',
+      weight: 4,
+      dashArray: '10, 10'
+    }).addTo(map);
+
+    if (activePlannedPolyline.getBounds().isValid()) {
+      map.fitBounds(activePlannedPolyline.getBounds(), { padding: [40, 40] });
+    }
+    return activePlannedPolyline;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.drawPlannedRoute = drawPlannedRoute;
+}
+
